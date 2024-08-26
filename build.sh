@@ -3,4 +3,4 @@ mkdir -p build/
 cd build/ || exit
 cmake ..
 make
-./termulator
+./terminulator

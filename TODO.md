@@ -1,8 +1,11 @@
 - [x] Create a window
 - [x] Accept input
-- [/] Show output
-    - [ ] XLookupString isn't real
-    - [ ] show what button was pressed on the screen
+- [x] Show output
+    - [x] XLookupString isn't real
+    - [x] show what button was pressed on the screen
+- [x] Write text on screan
+    - [ ] Parse special characters like space, enter, backspace, comma, colon, semicolon
+- [ ] On enter go to next line
 - [ ] Show prompt (user@hostname: <caret>)
 - [ ] run commands
 - [ ] show output of commands
