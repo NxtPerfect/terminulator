@@ -4,9 +4,12 @@
     - [x] XLookupString isn't real
     - [x] show what button was pressed on the screen
 - [x] Write text on screan
-    - [ ] Parse special characters like space, enter, backspace, comma, colon, semicolon
-- [ ] On enter go to next line
+    - [x] Parse special characters like space, enter, backspace, comma, colon, semicolon
+- [x] On backspace, remove last character
+- [/] On enter go to next line and run command
+    - [x] Currently crashes program
+    - [x] Send output of command to program
+    - [ ] When string has \n, go to new line
 - [ ] Show prompt (user@hostname: <caret>)
-- [ ] run commands
 - [ ] show output of commands
 [Source](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Output_Methods)
