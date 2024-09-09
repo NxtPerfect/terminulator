@@ -7,9 +7,10 @@
     - [x] Parse special characters like space, enter, backspace, comma, colon, semicolon
 - [x] On backspace, remove last character
 - [/] On enter go to next line and run command
-    - [x] Currently crashes program
     - [x] Send output of command to program
     - [ ] When string has \n, go to new line
+        - Either setup better way to draw strings
+        - or draw multiple of them on the output only
+            - Copying strings leads to duplicate characters
 - [ ] Show prompt (user@hostname: <caret>)
-- [ ] show output of commands
 [Source](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Output_Methods)

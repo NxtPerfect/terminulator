@@ -8,6 +8,8 @@
 char *parseSpecialKeysyms(const char *keysym);
 FILE *runCommandAndReturnOutput(char *command);
 char *removeLastCharacter(char *text);
+int drawString(Display *display, Window window,
+               struct WindowProperties properties, char *buffer);
 
 int main(int argc, char *argv[]) {
   Display *display = getDisplay();
@@ -50,29 +52,33 @@ int main(int argc, char *argv[]) {
 
     char *parsedKeysym = parseSpecialKeysyms(keysymString);
 
+    // BackSpace
+    if (!strcmp(parsedKeysym, "")) {
+      removeLastCharacter(buffer);
+    }
+
+    // Enter
     if (!strcmp(parsedKeysym, "\n")) {
       FILE *output = runCommandAndReturnOutput(buffer);
       char path[1035];
+
+      strcpy(buffer, "");
 
       while (fgets(path, sizeof(path), output) != NULL) {
         strcat(buffer, path);
       }
 
-      // close
       pclose(output);
-      // strcpy(buffer, "");
       parsedKeysym = "";
     }
 
-    if (!strcmp(parsedKeysym, "")) {
-      removeLastCharacter(buffer);
-    }
     strcat(buffer, parsedKeysym);
     // printf("Buffer: %s\n", buffer);
     XClearWindow(display, window);
-    int draw = XDrawString(display, window,
-                           DefaultGC(display, properties.screenNumber), 50, 50,
-                           buffer, strlen(buffer));
+    int draw = drawString(display, window, properties, buffer);
+    // int draw = XDrawString(display, window,
+    //                        DefaultGC(display, properties.screenNumber), 10,
+    //                        10, buffer, strlen(buffer));
 
     if (draw != 0) {
       printf("Error printing to window.\n");
@@ -142,7 +148,7 @@ FILE *runCommandAndReturnOutput(char *command) {
 
   fp = popen(parsedCommand, "r");
   if (fp == NULL) {
-    printf("Failed to run command\n" );
+    printf("Failed to run command\n");
     exit(1);
   }
 
@@ -159,4 +165,52 @@ char *removeLastCharacter(char *text) {
   char *newText = text;
   newText[stringEndIndex - 1] = '\0';
   return newText;
+}
+
+int drawString(Display *display, Window window,
+               struct WindowProperties properties, char *buffer) {
+  const int xOffset = 10;
+  const int yOffset = 10;
+  int x = xOffset;
+  int y = yOffset;
+  char drawBuff[] = "";
+  char lineBuff[] = "";
+  int buffIndex = 0;
+
+  while (buffer[buffIndex] != '\0') {
+    while (buffer[buffIndex] != '\0') {
+      if (buffer[buffIndex] == '\n') {
+        // strcpy(drawBuff, lineBuff);
+        printf("Here 1\n");
+        buffIndex++;
+        break;
+      }
+      // lineBuff = &buffer[buffIndex];
+      strcat(lineBuff, &buffer[buffIndex]);
+      printf("Here 2\n");
+
+      buffIndex++;
+    }
+    printf("Here 3 %s\n", lineBuff);
+    // This line segfaults
+    strcpy(drawBuff, lineBuff);
+    printf("Here 4 %s\n", drawBuff);
+
+    int draw = XDrawString(display, window,
+                           DefaultGC(display, properties.screenNumber), x, y,
+                           drawBuff, strlen(drawBuff));
+
+    strcpy(drawBuff, "");
+
+    if (draw != 0) {
+      printf("Error printing to window.\n");
+      XCloseDisplay(display);
+      return 1;
+    }
+
+    x += xOffset;
+    y += yOffset;
+  }
+
+  return 0;
 }
