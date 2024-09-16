@@ -12,5 +12,7 @@
         - Either setup better way to draw strings
         - or draw multiple of them on the output only
             - Copying strings leads to duplicate characters
+        - Now draw buffer is an empty string, or if it does copy
+        it only copies first line over and over
 - [ ] Show prompt (user@hostname: <caret>)
 [Source](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Output_Methods)

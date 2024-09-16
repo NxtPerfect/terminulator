@@ -5,11 +5,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_LINES 20
+#define MAX_CHARS_PER_LINE 256
+
 char *parseSpecialKeysyms(const char *keysym);
 FILE *runCommandAndReturnOutput(char *command);
 char *removeLastCharacter(char *text);
 int drawString(Display *display, Window window,
                struct WindowProperties properties, char *buffer);
+int isEscape(XEvent event);
+
+char lineBuffers[MAX_LINES][MAX_CHARS_PER_LINE];
+int indexOfLine = 0;
 
 int main(int argc, char *argv[]) {
   Display *display = getDisplay();
@@ -22,7 +29,7 @@ int main(int argc, char *argv[]) {
 
   XEvent event;
 
-  char buffer[256] = "";
+  char buffer[MAX_CHARS_PER_LINE] = "";
 
   struct WindowProperties properties = createDefaultWindowProperties();
 
@@ -32,8 +39,7 @@ int main(int argc, char *argv[]) {
     if (event.type != KeyPress)
       continue;
 
-    // Exit program on escape
-    if (event.xkey.keycode == 0x09)
+    if (isEscape(event))
       break;
 
     KeySym keysym = XLookupKeysym(&event.xkey, 0);
@@ -69,6 +75,7 @@ int main(int argc, char *argv[]) {
       }
 
       pclose(output);
+      // parsedKeysym = "\n"; // Maybe this could help finding \n?
       parsedKeysym = "";
     }
 
@@ -173,44 +180,46 @@ int drawString(Display *display, Window window,
   const int yOffset = 10;
   int x = xOffset;
   int y = yOffset;
-  char drawBuff[] = "";
-  char lineBuff[] = "";
-  int buffIndex = 0;
-
-  while (buffer[buffIndex] != '\0') {
-    while (buffer[buffIndex] != '\0') {
-      if (buffer[buffIndex] == '\n') {
-        // strcpy(drawBuff, lineBuff);
-        printf("Here 1\n");
-        buffIndex++;
-        break;
-      }
-      // lineBuff = &buffer[buffIndex];
-      strcat(lineBuff, &buffer[buffIndex]);
-      printf("Here 2\n");
-
-      buffIndex++;
-    }
-    printf("Here 3 %s\n", lineBuff);
-    // This line segfaults
-    strcpy(drawBuff, lineBuff);
-    printf("Here 4 %s\n", drawBuff);
-
-    int draw = XDrawString(display, window,
-                           DefaultGC(display, properties.screenNumber), x, y,
-                           drawBuff, strlen(drawBuff));
-
+  char drawBuff[MAX_CHARS_PER_LINE];
+  /*
+   * Make an array with all the lines possible to write on screen
+   * If there's a \n, put that text to next array
+   * If over the limit of lines, loop around
+   */
+  int bufferIndex = 0;
+  int drawBufferIndex = 0;
+  while (buffer[bufferIndex] != '\0' && bufferIndex < strlen(buffer)) {
     strcpy(drawBuff, "");
-
-    if (draw != 0) {
-      printf("Error printing to window.\n");
-      XCloseDisplay(display);
-      return 1;
+    while (buffer[bufferIndex] != '\n' && buffer[bufferIndex] != '\0' &&
+           bufferIndex < strlen(buffer)) {
+      drawBuff[drawBufferIndex] = buffer[bufferIndex];
+      printf("Draw Buffer: %c", drawBuff[bufferIndex]);
+      bufferIndex++;
+      drawBufferIndex++;
     }
-
-    x += xOffset;
-    y += yOffset;
+    printf("\n");
+    if (buffer[bufferIndex] == '\n') {
+      drawBuff[drawBufferIndex] = '\0';
+      if (indexOfLine > MAX_LINES - 1)
+        indexOfLine = 0;
+      strcpy(lineBuffers[indexOfLine], drawBuff);
+      printf("Line Buffer: %s\n", lineBuffers[indexOfLine]);
+      int draw = XDrawString(
+          display, window, DefaultGC(display, properties.screenNumber), x, y,
+          lineBuffers[indexOfLine], strlen(lineBuffers[indexOfLine]));
+      bufferIndex++;
+      indexOfLine++;
+    }
   }
 
+  x += xOffset;
+  y += yOffset;
+
+  return 0;
+}
+
+int isEscape(XEvent event) {
+  if (event.xkey.keycode == 0x09)
+    return 1;
   return 0;
 }
