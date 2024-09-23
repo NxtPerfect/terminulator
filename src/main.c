@@ -1,15 +1,18 @@
 #include "../inc/window.h"
 #include <X11/X.h>
 #include <X11/Xlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_LINES 20
+#define MAX_LINES 30
 #define MAX_CHARS_PER_LINE 256
 
 char *parseSpecialKeysyms(const char *keysym);
-FILE *runCommandAndReturnOutput(char *command);
+char *printOutputFromCommandFile(char *command, char *buffer);
+FILE *returnOutputOfRanCommand(char *command);
+char *printCommand(FILE *output, char *outputBuffer);
 char *removeLastCharacter(char *text);
 int drawString(Display *display, Window window,
                struct WindowProperties properties, char *buffer);
@@ -64,29 +67,42 @@ int main(int argc, char *argv[]) {
     }
 
     // Enter
+    char outputBuffer[4096];
+    bool isCommandOutput = false;
     if (!strcmp(parsedKeysym, "\n")) {
-      FILE *output = runCommandAndReturnOutput(buffer);
-      char path[1035];
-
-      strcpy(buffer, "");
-
-      while (fgets(path, sizeof(path), output) != NULL) {
-        strcat(buffer, path);
-      }
-
-      pclose(output);
-      // parsedKeysym = "\n"; // Maybe this could help finding \n?
-      parsedKeysym = "";
+      printOutputFromCommandFile(buffer, outputBuffer);
+      isCommandOutput = true;
+      // FILE *output = printOutputFromCommandFile(buffer);
+      // char path[1035];
+      //
+      // strcpy(buffer, "");
+      //
+      // while (fgets(path, sizeof(path), output) != NULL) {
+      //   strcat(buffer, path);
+      // }
+      //
+      // pclose(output);
+      // // parsedKeysym = "\n"; // Maybe this could help finding \n?
+      // parsedKeysym = "";
     }
 
-    strcat(buffer, parsedKeysym);
+    int draw = -1;
+    if (isCommandOutput) {
+      printf("Got output buffer");
+      XClearWindow(display, window);
+      draw = XDrawString(display, window,
+                         DefaultGC(display, properties.screenNumber), 10, 10,
+                         outputBuffer, strlen(outputBuffer));
+      strcpy(buffer, "");
+      isCommandOutput = false;
+    } else {
+      strcat(buffer, parsedKeysym);
+      XClearWindow(display, window);
+      draw = XDrawString(display, window,
+                         DefaultGC(display, properties.screenNumber), 10, 10,
+                         buffer, strlen(buffer));
+    }
     // printf("Buffer: %s\n", buffer);
-    XClearWindow(display, window);
-    int draw = drawString(display, window, properties, buffer);
-    // int draw = XDrawString(display, window,
-    //                        DefaultGC(display, properties.screenNumber), 10,
-    //                        10, buffer, strlen(buffer));
-
     if (draw != 0) {
       printf("Error printing to window.\n");
       XCloseDisplay(display);
@@ -130,18 +146,25 @@ char *parseSpecialKeysyms(const char *keysym) {
   }
   if (!strcmp(keysym, "BackSpace")) {
     buffer = "";
-    // Remove previous character
+    // TODO: Remove previous character
   }
   if (!strcmp(keysym, "Return")) {
     buffer = "\n";
-    // Run Command
+    // TODO: Run Command
   }
   if (strcmp(buffer, "PREPARSE"))
     return buffer;
   return keysym;
 }
 
-FILE *runCommandAndReturnOutput(char *command) {
+char *printOutputFromCommandFile(char *command, char *outputBuffer) {
+  FILE *fp = returnOutputOfRanCommand(command);
+  outputBuffer = printCommand(fp, outputBuffer);
+
+  return outputBuffer;
+}
+
+FILE *returnOutputOfRanCommand(char *command) {
   printf("Running command...\n");
 
   char parsedCommand[1024] = "";
@@ -160,6 +183,19 @@ FILE *runCommandAndReturnOutput(char *command) {
   }
 
   return fp;
+}
+
+char *printCommand(FILE *output, char *outputBuffer) {
+  char path[1035];
+
+  strcpy(outputBuffer, "");
+
+  while (fgets(path, sizeof(path), output) != NULL) {
+    strcat(outputBuffer, path);
+  }
+
+  pclose(output);
+  return outputBuffer;
 }
 
 char *removeLastCharacter(char *text) {
@@ -188,7 +224,8 @@ int drawString(Display *display, Window window,
    */
   int bufferIndex = 0;
   int drawBufferIndex = 0;
-  while (buffer[bufferIndex] != '\0' && bufferIndex < strlen(buffer)) {
+  while (indexOfLine < 2 && bufferIndex < strlen(buffer)) {
+    // while (buffer[bufferIndex] != '\0' && bufferIndex < strlen(buffer)) {
     strcpy(drawBuff, "");
     while (buffer[bufferIndex] != '\n' && buffer[bufferIndex] != '\0' &&
            bufferIndex < strlen(buffer)) {
@@ -199,6 +236,7 @@ int drawString(Display *display, Window window,
     }
     printf("\n");
     if (buffer[bufferIndex] == '\n') {
+      printf("Equals \\n\n");
       drawBuff[drawBufferIndex] = '\0';
       if (indexOfLine > MAX_LINES - 1)
         indexOfLine = 0;
@@ -207,9 +245,10 @@ int drawString(Display *display, Window window,
       int draw = XDrawString(
           display, window, DefaultGC(display, properties.screenNumber), x, y,
           lineBuffers[indexOfLine], strlen(lineBuffers[indexOfLine]));
-      bufferIndex++;
       indexOfLine++;
     }
+    bufferIndex++;
+    printf("Index after loop %d\n", bufferIndex);
   }
 
   x += xOffset;

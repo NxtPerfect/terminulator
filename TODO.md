@@ -8,11 +8,16 @@
 - [x] On backspace, remove last character
 - [/] On enter go to next line and run command
     - [x] Send output of command to program
-    - [ ] When string has \n, go to new line
-        - Either setup better way to draw strings
-        - or draw multiple of them on the output only
-            - Copying strings leads to duplicate characters
-        - Now draw buffer is an empty string, or if it does copy
-        it only copies first line over and over
+    - [/] Restructure current typing architecture
+        - Handle user input as one function, writing as normal
+        - Then for command output, have seperate function
+        that doesn't interfere with writing buffer
+        it simply writes the output and starts new prompt
+        for user, meaning the output isn't related to input
+        - [x] Prints out command output, clears buffer
+        then type out another command, it won't catch
+        the output from previous command, as input
+- [ ] Remove last character should exist when parsing keysym
+    - same as running a command
 - [ ] Show prompt (user@hostname: <caret>)
 [Source](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Output_Methods)
