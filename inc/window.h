@@ -10,6 +10,12 @@ struct WindowProperties {
   int screenNumber;
 };
 
+struct DisplayWindowContext {
+  Display *display;
+  Window window;
+  GC gc;
+};
+
 struct WindowProperties createDefaultWindowProperties();
 Display *getDisplay();
 Window createWindow(Display *display);
