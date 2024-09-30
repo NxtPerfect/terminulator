@@ -8,7 +8,7 @@
 - [x] On backspace, remove last character
 - [/] On enter go to next line and run command
     - [x] Send output of command to program
-    - [/] Restructure current typing architecture
+    - [x] Restructure current typing architecture
         - Handle user input as one function, writing as normal
         - Then for command output, have seperate function
         that doesn't interfere with writing buffer
@@ -17,6 +17,8 @@
         - [x] Prints out command output, clears buffer
         then type out another command, it won't catch
         the output from previous command, as input
+    - [ ] When trying to copy to output buffer
+    i get error of accessing bad memory
 - [ ] Remove last character should exist when parsing keysym
     - same as running a command
 - [ ] Show prompt (user@hostname: <caret>)

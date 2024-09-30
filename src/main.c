@@ -10,13 +10,13 @@
 #define MAX_CHARS_PER_LINE 256
 
 char *parseSpecialKeysyms(const char *keysym);
-char *printOutputFromCommandFile(char *command, char *buffer);
+char *getOutputFromCommandFile(char *command, char *buffer);
 FILE *returnOutputOfRanCommand(char *command);
 char *returnCommandOutput(FILE *output, char *outputBuffer);
 void printCommandOutput(struct DisplayWindowContext displayWindowContext,
                         struct WindowProperties windowProperties,
                         char *command);
-char *runCommand(char *command);
+char *runCommand(char *command, char **outputBuffer);
 void splitIntoArrayOfLines(char *outputBuffer,
                            char lines[][MAX_CHARS_PER_LINE]);
 char *removeLastCharacter(char *text);
@@ -83,18 +83,6 @@ int main(int argc, char *argv[]) {
       printCommandOutput(displayWindowContext, properties, buffer);
       // printOutputFromCommandFile(buffer, outputBuffer);
       isCommandOutput = true;
-      // FILE *output = printOutputFromCommandFile(buffer);
-      // char path[1035];
-      //
-      // strcpy(buffer, "");
-      //
-      // while (fgets(path, sizeof(path), output) != NULL) {
-      //   strcat(buffer, path);
-      // }
-      //
-      // pclose(output);
-      // // parsedKeysym = "\n"; // Maybe this could help finding \n?
-      // parsedKeysym = "";
     }
 
     int draw = -1;
@@ -171,11 +159,9 @@ char *parseSpecialKeysyms(const char *keysym) {
   return keysym;
 }
 
-char *printOutputFromCommandFile(char *command, char *outputBuffer) {
+char *getOutputFromCommandFile(char *command, char *outputBuffer) {
   FILE *fp = returnOutputOfRanCommand(command);
   outputBuffer = returnCommandOutput(fp, outputBuffer);
-  // drawString(struct DisplayWindowContext dwc, struct WindowProperties
-  // properties, char *buffer);
 
   return outputBuffer;
 }
@@ -204,14 +190,15 @@ FILE *returnOutputOfRanCommand(char *command) {
 void printCommandOutput(struct DisplayWindowContext displayWindowContext,
                         struct WindowProperties windowProperties,
                         char *command) {
-  char *outputBuffer = "This is\nOutputBuffer\nOfCommand\n";
-  // char *outputBuffer = runCommand(command);
+  // char *outputBuffer = "This is\nOutputBuffer\nOfCommand\n";
+  char *outputBuffer;
+  outputBuffer = runCommand(command, &outputBuffer);
   char lines[MAX_LINES][MAX_CHARS_PER_LINE] = {0};
-  splitIntoArrayOfLines(outputBuffer, lines);
-  drawString(displayWindowContext, windowProperties, lines);
+  // splitIntoArrayOfLines(outputBuffer, lines);
+  // drawString(displayWindowContext, windowProperties, lines);
 }
 
-char *runCommand(char *command) {
+char *runCommand(char *command, char **outputBuffer) {
   char parsedCommand[1024] = "";
   if (!strstr(command, "/bin"))
     strcat(parsedCommand, "/bin/");
@@ -228,17 +215,18 @@ char *runCommand(char *command) {
   }
 
   char path[1035];
-  char *outputBuffer;
 
-  strcpy(outputBuffer, "");
+  // Seg fault, probably due to outputBuffer being foreign
+  // aka, not from this function
+  strcpy(*outputBuffer, "");
 
-  while (fgets(path, sizeof(path), output) != NULL) {
-    strcat(outputBuffer, path);
-  }
-
-  printf("Output Buffer of Command: %s\n", outputBuffer);
-  pclose(output);
-  return outputBuffer;
+  // while (fgets(path, sizeof(path), output) != NULL) {
+  //   strcat(*outputBuffer, path);
+  // }
+  //
+  // printf("Output Buffer of Command: %s\n", *outputBuffer);
+  // pclose(output);
+  return *outputBuffer;
 }
 
 void splitIntoArrayOfLines(char *outputBuffer,
