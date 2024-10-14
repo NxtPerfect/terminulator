@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_LINES 30
+#define MAX_LINES 50
 #define MAX_CHARS_PER_LINE 256
 
 char *parseSpecialKeysyms(const char *keysym);
@@ -16,7 +16,7 @@ char *returnCommandOutput(FILE *output, char *outputBuffer);
 void printCommandOutput(struct DisplayWindowContext displayWindowContext,
                         struct WindowProperties windowProperties,
                         char *command);
-char *runCommand(char *command, char **outputBuffer);
+char *runCommand(char *command);
 void splitIntoArrayOfLines(char *outputBuffer,
                            char lines[][MAX_CHARS_PER_LINE]);
 char *removeLastCharacter(char *text);
@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
     if (isEscape(event))
       break;
 
+    // TODO: getKeysymToString(&event.xkey);
     KeySym keysym = XLookupKeysym(&event.xkey, 0);
 
     if (keysym == 0) {
@@ -81,19 +82,11 @@ int main(int argc, char *argv[]) {
     bool isCommandOutput = false;
     if (!strcmp(parsedKeysym, "\n")) {
       printCommandOutput(displayWindowContext, properties, buffer);
-      // printOutputFromCommandFile(buffer, outputBuffer);
       isCommandOutput = true;
     }
 
     int draw = -1;
     if (isCommandOutput) {
-      printf("Got output buffer");
-      // XClearWindow(displayWindowContext.display,
-      // displayWindowContext.window); draw =
-      // XDrawString(displayWindowContext.display,
-      //                    displayWindowContext.window,
-      //                    displayWindowContext.gc, 10, 10, outputBuffer,
-      //                    strlen(outputBuffer));
       strcpy(buffer, "");
       draw = 0;
       isCommandOutput = false;
@@ -104,17 +97,12 @@ int main(int argc, char *argv[]) {
           XDrawString(displayWindowContext.display, displayWindowContext.window,
                       displayWindowContext.gc, 10, 10, buffer, strlen(buffer));
     }
-    // printf("Buffer: %s\n", buffer);
     if (draw != 0) {
       printf("Error printing to window.\n");
       XCloseDisplay(displayWindowContext.display);
       return 1;
     }
   }
-
-  // // respects grab_window, GrabModeSync, GrabModeSync
-  // XGrabKeyboard(display, window, 0, 0, 0, CurrentTime);
-  // XUngrabKeyboard(display, CurrentTime);
 
   XCloseDisplay(displayWindowContext.display);
   return 0;
@@ -146,6 +134,12 @@ char *parseSpecialKeysyms(const char *keysym) {
   if (!strcmp(keysym, "equal")) {
     buffer = "=";
   }
+  if (!strcmp(keysym, "backslash")) {
+    buffer = "\\";
+  }
+  if (!strcmp(keysym, "slash")) {
+    buffer = "/";
+  }
   if (!strcmp(keysym, "BackSpace")) {
     buffer = "";
     // TODO: Remove previous character
@@ -159,74 +153,49 @@ char *parseSpecialKeysyms(const char *keysym) {
   return keysym;
 }
 
-char *getOutputFromCommandFile(char *command, char *outputBuffer) {
-  FILE *fp = returnOutputOfRanCommand(command);
-  outputBuffer = returnCommandOutput(fp, outputBuffer);
-
-  return outputBuffer;
-}
-
-FILE *returnOutputOfRanCommand(char *command) {
-  printf("Running command...\n");
-
-  char parsedCommand[1024] = "";
-  if (!strstr(command, "/bin"))
-    strcat(parsedCommand, "/bin/");
-
-  strcat(parsedCommand, command);
-  printf("%s\n", parsedCommand);
-
-  FILE *fp = NULL;
-
-  fp = popen(parsedCommand, "r");
-  if (fp == NULL) {
-    printf("Failed to run command\n");
-    exit(1);
-  }
-
-  return fp;
-}
-
 void printCommandOutput(struct DisplayWindowContext displayWindowContext,
                         struct WindowProperties windowProperties,
                         char *command) {
-  // char *outputBuffer = "This is\nOutputBuffer\nOfCommand\n";
-  char *outputBuffer;
-  outputBuffer = runCommand(command, &outputBuffer);
+  char *outputBuffer = runCommand(command);
   char lines[MAX_LINES][MAX_CHARS_PER_LINE] = {0};
-  // splitIntoArrayOfLines(outputBuffer, lines);
-  // drawString(displayWindowContext, windowProperties, lines);
+  splitIntoArrayOfLines(outputBuffer, lines);
+  drawString(displayWindowContext, windowProperties, lines);
 }
 
-char *runCommand(char *command, char **outputBuffer) {
+char *runCommand(char *command) {
   char parsedCommand[1024] = "";
   if (!strstr(command, "/bin"))
     strcat(parsedCommand, "/bin/");
 
   strcat(parsedCommand, command);
+
+  // Redirect stderr to stdout
+  strcat(parsedCommand, " 2>&1");
   printf("%s\n", parsedCommand);
 
-  FILE *output = NULL;
+  FILE *commandStream = NULL;
 
-  output = popen(parsedCommand, "r");
-  if (output == NULL) {
-    printf("Failed to run command\n");
+  commandStream = popen(parsedCommand, "r");
+  if (commandStream == NULL) {
+    printf("Failed to open command stream\n");
     exit(1);
   }
 
-  char path[1035];
+  char path[1035] = "";
 
-  // Seg fault, probably due to outputBuffer being foreign
-  // aka, not from this function
-  strcpy(*outputBuffer, "");
+  char *outputBuffer = (char *) malloc(100);
+  strcpy(outputBuffer, "");
 
-  // while (fgets(path, sizeof(path), output) != NULL) {
-  //   strcat(*outputBuffer, path);
-  // }
-  //
-  // printf("Output Buffer of Command: %s\n", *outputBuffer);
-  // pclose(output);
-  return *outputBuffer;
+  while (fgets(path, sizeof(path), commandStream) != NULL) {
+    printf("%s", path);
+    strcat(outputBuffer, path);
+  }
+
+  printf("Output Buffer of Command: %s\n", outputBuffer);
+  if (pclose(commandStream) != 0) {
+    printf("Failed to close command stream\n");
+  }
+  return outputBuffer;
 }
 
 void splitIntoArrayOfLines(char *outputBuffer,
@@ -235,6 +204,7 @@ void splitIntoArrayOfLines(char *outputBuffer,
 
   while (outputBuffer[outputIndex] != '\0') {
     if (outputBuffer[outputIndex] == '\n') {
+      printf("%d: %s\n", linesIndex, lines[linesIndex]);
       lines[linesIndex][charInLineIndex] = '\0';
       linesIndex++;
       charInLineIndex = 0;
@@ -250,6 +220,23 @@ void splitIntoArrayOfLines(char *outputBuffer,
     lines[linesIndex][charInLineIndex] = '\0';
   }
 }
+
+void drawString(struct DisplayWindowContext displayWindowContext,
+                struct WindowProperties properties,
+                char lines[][MAX_CHARS_PER_LINE]) {
+  int xOffset = 20;
+  int yOffset = 12;
+
+  XClearWindow(displayWindowContext.display, displayWindowContext.window);
+
+  for (int i = 0; i < MAX_LINES; i++) {
+    int draw =
+        XDrawString(displayWindowContext.display, displayWindowContext.window,
+                    displayWindowContext.gc, xOffset,
+                    yOffset * (i + 1), lines[i], strlen(lines[i]));
+  }
+}
+
 
 char *removeLastCharacter(char *text) {
   int stringEndIndex = strlen(text);
@@ -274,21 +261,6 @@ char *returnCommandOutput(FILE *output, char *outputBuffer) {
 
   pclose(output);
   return outputBuffer;
-}
-
-void drawString(struct DisplayWindowContext displayWindowContext,
-                struct WindowProperties properties,
-                char lines[][MAX_CHARS_PER_LINE]) {
-  int xOffset, yOffset = 20;
-
-  XClearWindow(displayWindowContext.display, displayWindowContext.window);
-
-  for (int i = 0; i < MAX_LINES; i++) {
-    int draw =
-        XDrawString(displayWindowContext.display, displayWindowContext.window,
-                    displayWindowContext.gc, xOffset * (i + 1),
-                    yOffset * (i + 1), lines[i], strlen(lines[i]));
-  }
 }
 
 int isEscape(XEvent event) {

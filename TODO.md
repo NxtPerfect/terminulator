@@ -17,9 +17,7 @@
         - [x] Prints out command output, clears buffer
         then type out another command, it won't catch
         the output from previous command, as input
-    - [ ] When trying to copy to output buffer
+    - [x] When trying to copy to output buffer
     i get error of accessing bad memory
-- [ ] Remove last character should exist when parsing keysym
-    - same as running a command
-- [ ] Show prompt (user@hostname: <caret>)
+    - [x] DrawString doesn't use offset at all
 [Source](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Output_Methods)
