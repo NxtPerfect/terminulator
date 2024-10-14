@@ -5,6 +5,7 @@ minimalistic terminal emulator written in pure C
 - Support for multiline function output up to 50 lines
 - Run any command in terminal
 - Print output of command
+- Limited to only linux, due to prefixing each typed command with "/bin"
 
 # Usage
 Build the program using `build.sh` script, which automatically runs it after compiling.
