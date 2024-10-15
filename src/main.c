@@ -9,7 +9,8 @@
 #define MAX_LINES 50
 #define MAX_CHARS_PER_LINE 256
 
-char *parseSpecialKeysyms(const char *keysym);
+const char *parseSpecialKeysyms(const char *keysym);
+char *getKeysymToString(XKeyEvent *xkey);
 char *getOutputFromCommandFile(char *command, char *buffer);
 FILE *returnOutputOfRanCommand(char *command);
 char *returnCommandOutput(FILE *output, char *outputBuffer);
@@ -55,14 +56,14 @@ int main(int argc, char *argv[]) {
     if (isEscape(event))
       break;
 
-    // TODO: getKeysymToString(&event.xkey);
-    KeySym keysym = XLookupKeysym(&event.xkey, 0);
-
-    if (keysym == 0) {
-      printf("Error looking up keysym %lu \n", keysym);
-    }
-
-    const char *keysymString = XKeysymToString(keysym);
+    const char *keysymString = getKeysymToString(&event.xkey);
+    // KeySym keysym = XLookupKeysym(&event.xkey, 0);
+    //
+    // if (keysym == 0) {
+    //   printf("Error looking up keysym %lu \n", keysym);
+    // }
+    //
+    // const char *keysymString = XKeysymToString(keysym);
 
     if (keysymString == NULL) {
       printf("Failed changing keysym to string.\n");
@@ -70,7 +71,7 @@ int main(int argc, char *argv[]) {
 
     printf("Key pressed here: %s\n", keysymString);
 
-    char *parsedKeysym = parseSpecialKeysyms(keysymString);
+    const char *parsedKeysym = parseSpecialKeysyms(keysymString);
 
     // BackSpace
     if (!strcmp(parsedKeysym, "")) {
@@ -108,7 +109,17 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-char *parseSpecialKeysyms(const char *keysym) {
+char *getKeysymToString(XKeyEvent *xkey) {
+  KeySym keysym = XLookupKeysym(xkey, 0);
+
+  if (keysym == 0) {
+    printf("Error looking up keysym %lu \n", keysym);
+  }
+
+  return XKeysymToString(keysym);
+}
+
+const char *parseSpecialKeysyms(const char *keysym) {
   char *buffer = "PREPARSE";
   if (!strcmp(keysym, "space")) {
     buffer = " ";
@@ -142,11 +153,9 @@ char *parseSpecialKeysyms(const char *keysym) {
   }
   if (!strcmp(keysym, "BackSpace")) {
     buffer = "";
-    // TODO: Remove previous character
   }
   if (!strcmp(keysym, "Return")) {
     buffer = "\n";
-    // TODO: Run Command
   }
   if (strcmp(buffer, "PREPARSE"))
     return buffer;
@@ -183,7 +192,7 @@ char *runCommand(char *command) {
 
   char path[1035] = "";
 
-  char *outputBuffer = (char *) malloc(100);
+  char *outputBuffer = (char *)malloc(100);
   strcpy(outputBuffer, "");
 
   while (fgets(path, sizeof(path), commandStream) != NULL) {
@@ -232,11 +241,10 @@ void drawString(struct DisplayWindowContext displayWindowContext,
   for (int i = 0; i < MAX_LINES; i++) {
     int draw =
         XDrawString(displayWindowContext.display, displayWindowContext.window,
-                    displayWindowContext.gc, xOffset,
-                    yOffset * (i + 1), lines[i], strlen(lines[i]));
+                    displayWindowContext.gc, xOffset, yOffset * (i + 1),
+                    lines[i], strlen(lines[i]));
   }
 }
-
 
 char *removeLastCharacter(char *text) {
   int stringEndIndex = strlen(text);
