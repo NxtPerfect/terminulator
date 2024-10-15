@@ -1,30 +1,8 @@
-#include "../inc/window.h"
+#include "../inc/main.h"
 #include <X11/X.h>
-#include <X11/Xlib.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define MAX_LINES 50
-#define MAX_CHARS_PER_LINE 256
-
-const char *parseSpecialKeysyms(const char *keysym);
-char *getKeysymToString(XKeyEvent *xkey);
-char *getOutputFromCommandFile(char *command, char *buffer);
-FILE *returnOutputOfRanCommand(char *command);
-char *returnCommandOutput(FILE *output, char *outputBuffer);
-void printCommandOutput(struct DisplayWindowContext displayWindowContext,
-                        struct WindowProperties windowProperties,
-                        char *command);
-char *runCommand(char *command);
-void splitIntoArrayOfLines(char *outputBuffer,
-                           char lines[][MAX_CHARS_PER_LINE]);
-char *removeLastCharacter(char *text);
-void drawString(struct DisplayWindowContext displayWindowContext,
-                struct WindowProperties properties,
-                char lines[][MAX_CHARS_PER_LINE]);
-int isEscape(XEvent event);
 
 char lineBuffers[MAX_LINES][MAX_CHARS_PER_LINE];
 int indexOfLine = 0;
@@ -57,13 +35,6 @@ int main(int argc, char *argv[]) {
       break;
 
     const char *keysymString = getKeysymToString(&event.xkey);
-    // KeySym keysym = XLookupKeysym(&event.xkey, 0);
-    //
-    // if (keysym == 0) {
-    //   printf("Error looking up keysym %lu \n", keysym);
-    // }
-    //
-    // const char *keysymString = XKeysymToString(keysym);
 
     if (keysymString == NULL) {
       printf("Failed changing keysym to string.\n");
@@ -76,28 +47,23 @@ int main(int argc, char *argv[]) {
     // BackSpace
     if (!strcmp(parsedKeysym, "")) {
       removeLastCharacter(buffer);
+      drawString(displayWindowContext, buffer);
+      continue;
     }
 
     // Enter
-    char outputBuffer[4096];
-    bool isCommandOutput = false;
     if (!strcmp(parsedKeysym, "\n")) {
       printCommandOutput(displayWindowContext, properties, buffer);
-      isCommandOutput = true;
+      strcpy(buffer, "");
+      continue;
     }
 
-    int draw = -1;
-    if (isCommandOutput) {
-      strcpy(buffer, "");
-      draw = 0;
-      isCommandOutput = false;
-    } else {
-      strcat(buffer, parsedKeysym);
-      XClearWindow(displayWindowContext.display, displayWindowContext.window);
-      draw =
-          XDrawString(displayWindowContext.display, displayWindowContext.window,
-                      displayWindowContext.gc, 10, 10, buffer, strlen(buffer));
-    }
+    strcat(buffer, parsedKeysym);
+    XClearWindow(displayWindowContext.display, displayWindowContext.window);
+    int draw =
+        XDrawString(displayWindowContext.display, displayWindowContext.window,
+                    displayWindowContext.gc, 10, 10, buffer, strlen(buffer));
+
     if (draw != 0) {
       printf("Error printing to window.\n");
       XCloseDisplay(displayWindowContext.display);
@@ -168,7 +134,7 @@ void printCommandOutput(struct DisplayWindowContext displayWindowContext,
   char *outputBuffer = runCommand(command);
   char lines[MAX_LINES][MAX_CHARS_PER_LINE] = {0};
   splitIntoArrayOfLines(outputBuffer, lines);
-  drawString(displayWindowContext, windowProperties, lines);
+  drawLines(displayWindowContext, windowProperties, lines);
 }
 
 char *runCommand(char *command) {
@@ -230,9 +196,9 @@ void splitIntoArrayOfLines(char *outputBuffer,
   }
 }
 
-void drawString(struct DisplayWindowContext displayWindowContext,
-                struct WindowProperties properties,
-                char lines[][MAX_CHARS_PER_LINE]) {
+void drawLines(struct DisplayWindowContext displayWindowContext,
+               struct WindowProperties properties,
+               char lines[][MAX_CHARS_PER_LINE]) {
   int xOffset = 20;
   int yOffset = 12;
 
@@ -243,6 +209,19 @@ void drawString(struct DisplayWindowContext displayWindowContext,
         XDrawString(displayWindowContext.display, displayWindowContext.window,
                     displayWindowContext.gc, xOffset, yOffset * (i + 1),
                     lines[i], strlen(lines[i]));
+  }
+}
+
+void drawString(struct DisplayWindowContext displayWindowContext,
+                char *buffer) {
+  XClearWindow(displayWindowContext.display, displayWindowContext.window);
+  int draw =
+      XDrawString(displayWindowContext.display, displayWindowContext.window,
+                  displayWindowContext.gc, 10, 10, buffer, strlen(buffer));
+  if (draw != 0) {
+    printf("Error printing to window.\n");
+    XCloseDisplay(displayWindowContext.display);
+    return;
   }
 }
 
