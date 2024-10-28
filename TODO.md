@@ -21,5 +21,7 @@
     i get error of accessing bad memory
     - [x] DrawString doesn't use offset at all
 - [ ] Fix crashing on second command
+    - crashes for both `fastfetch` and `ls -h`
+    - with `ls -h` it crashes when removing characters?
 - [ ] Fix crashing if output has more lines than array
 [Source](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Output_Methods)

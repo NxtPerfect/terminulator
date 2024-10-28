@@ -15,9 +15,9 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  displayWindowContext.window = createWindow(displayWindowContext.display);
-
   struct WindowProperties properties = createDefaultWindowProperties();
+
+  displayWindowContext.window = createWindow(displayWindowContext.display);
   displayWindowContext.gc =
       DefaultGC(displayWindowContext.display, properties.screenNumber);
 
@@ -123,9 +123,12 @@ const char *parseSpecialKeysyms(const char *keysym) {
   if (!strcmp(keysym, "Return")) {
     buffer = "\n";
   }
-  if (strcmp(buffer, "PREPARSE"))
-    return buffer;
-  return keysym;
+  if (!strcmp(keysym, "Shift_L") || !strcmp(keysym, "Shift_R")) {
+    buffer = "^";
+  }
+  if (!strcmp(buffer, "PREPARSE"))
+    return keysym;
+  return buffer;
 }
 
 void printCommandOutput(struct DisplayWindowContext displayWindowContext,
@@ -135,6 +138,7 @@ void printCommandOutput(struct DisplayWindowContext displayWindowContext,
   char lines[MAX_LINES][MAX_CHARS_PER_LINE] = {0};
   splitIntoArrayOfLines(outputBuffer, lines);
   drawLines(displayWindowContext, windowProperties, lines);
+  free(outputBuffer);
 }
 
 char *runCommand(char *command) {
@@ -157,11 +161,21 @@ char *runCommand(char *command) {
   }
 
   char path[1035] = "";
+  printf("Created path\n");
 
-  char *outputBuffer = (char *)malloc(100);
+  char *outputBuffer = (char *)malloc((100 + 1) * sizeof(char));
+  printf("Created output buffer\n");
+
+  if (outputBuffer == NULL) {
+    printf("Failed to create output buffer\n");
+    exit(1);
+  }
+
   strcpy(outputBuffer, "");
+  printf("Cleared output buffer\n");
 
-  while (fgets(path, sizeof(path), commandStream) != NULL) {
+  int pathSize = sizeof(path);
+  while (fgets(path, pathSize, commandStream) != NULL) {
     printf("%s", path);
     strcat(outputBuffer, path);
   }
@@ -207,6 +221,7 @@ void splitIntoArrayOfLines(char *outputBuffer,
   }
 
   if (lines[linesIndex][charInLineIndex] != '\0') {
+    printf("End of output, adding end to string");
     lines[linesIndex][charInLineIndex] = '\0';
   }
 }
