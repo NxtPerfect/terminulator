@@ -180,14 +180,29 @@ void splitIntoArrayOfLines(char *outputBuffer,
   while (outputBuffer[outputIndex] != '\0') {
     if (outputBuffer[outputIndex] == '\n') {
       printf("%d: %s\n", linesIndex, lines[linesIndex]);
+
       lines[linesIndex][charInLineIndex] = '\0';
-      linesIndex++;
+
+      if (isSafeIncrementLines(linesIndex)) {
+        linesIndex++;
+      } else {
+        linesIndex = 0;
+      }
       charInLineIndex = 0;
       outputIndex++;
       continue;
     }
+
     lines[linesIndex][charInLineIndex] = outputBuffer[outputIndex];
-    charInLineIndex++;
+    if (isSafeIncrementChars(charInLineIndex))
+      charInLineIndex++;
+    else if (isSafeIncrementLines(linesIndex)) {
+      linesIndex++;
+      charInLineIndex = 0;
+    } else {
+      linesIndex = 0;
+      charInLineIndex = 0;
+    }
     outputIndex++;
   }
 
@@ -196,19 +211,28 @@ void splitIntoArrayOfLines(char *outputBuffer,
   }
 }
 
+int isSafeIncrementLines(int linesIndex) {
+  if (linesIndex >= MAX_LINES)
+    return -1;
+  return 1;
+}
+
+int isSafeIncrementChars(int charInLineIndex) {
+  if (charInLineIndex >= MAX_CHARS_PER_LINE)
+    return -1;
+  return 1;
+}
+
 void drawLines(struct DisplayWindowContext displayWindowContext,
                struct WindowProperties properties,
                char lines[][MAX_CHARS_PER_LINE]) {
-  int xOffset = 20;
-  int yOffset = 12;
-
   XClearWindow(displayWindowContext.display, displayWindowContext.window);
 
   for (int i = 0; i < MAX_LINES; i++) {
     int draw =
         XDrawString(displayWindowContext.display, displayWindowContext.window,
-                    displayWindowContext.gc, xOffset, yOffset * (i + 1),
-                    lines[i], strlen(lines[i]));
+                    displayWindowContext.gc, X_LINES_OFFSET,
+                    Y_LINES_OFFSET * (i + 1), lines[i], strlen(lines[i]));
   }
 }
 

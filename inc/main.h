@@ -3,6 +3,8 @@
 #include <stdio.h>
 #define MAX_LINES 50
 #define MAX_CHARS_PER_LINE 256
+#define X_LINES_OFFSET 20
+#define Y_LINES_OFFSET 12
 
 const char *parseSpecialKeysyms(const char *keysym);
 char *getKeysymToString(XKeyEvent *xkey);
@@ -21,3 +23,5 @@ void drawLines(struct DisplayWindowContext displayWindowContext,
                struct WindowProperties properties,
                char lines[][MAX_CHARS_PER_LINE]);
 int isEscape(XEvent event);
+int isSafeIncrementLines(int linesIndex);
+int isSafeIncrementChars(int charInLineIndex);

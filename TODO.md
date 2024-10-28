@@ -6,7 +6,7 @@
 - [x] Write text on screan
     - [x] Parse special characters like space, enter, backspace, comma, colon, semicolon
 - [x] On backspace, remove last character
-- [/] On enter go to next line and run command
+- [x] On enter go to next line and run command
     - [x] Send output of command to program
     - [x] Restructure current typing architecture
         - Handle user input as one function, writing as normal
@@ -20,4 +20,6 @@
     - [x] When trying to copy to output buffer
     i get error of accessing bad memory
     - [x] DrawString doesn't use offset at all
+- [ ] Fix crashing on second command
+- [ ] Fix crashing if output has more lines than array
 [Source](https://www.x.org/releases/current/doc/libX11/libX11/libX11.html#Output_Methods)
